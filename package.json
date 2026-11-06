@@ -4,6 +4,6 @@
   "version": "1.0.0",
   "description": "建筑设备水复习闯关题库与复习资料",
   "scripts": {
-    "test": "node test.cjs"
+    "test": "node --require ./docs/coach.js test.cjs && node test-coach.cjs"
   }
 }
