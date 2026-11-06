@@ -1,6 +1,6 @@
 (function(root){
 'use strict';
-const DAY=86400000,ZONE=8*3600000,DEFAULT_EXAM='2026-11-11T12:00';
+const DAY=86400000,ZONE=8*3600000,DEFAULT_EXAM='2026-11-11T12:20';
 const rewards=[
  {id:'praise',cost:5,title:'小小夸夸卡',icon:'♡',message:'今天认真复习的你，又向目标靠近了一点。每一道弄懂的题，都值得给自己一个赞。'},
  {id:'rest',cost:10,title:'甜蜜休息卡',icon:'☕',message:'给自己 5 分钟小休息：喝点水，伸个懒腰。休息好，再回来和小水滴一起闯关。'},

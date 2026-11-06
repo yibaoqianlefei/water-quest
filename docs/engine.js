@@ -20,7 +20,7 @@ function pick(questions,count=12,rng=Math.random){
  const selected=[];for(const type of shuffle([...new Set(questions.map(q=>q.type))],rng).slice(0,count)){const list=questions.filter(q=>q.type===type);if(list.length)selected.push(shuffle(list,rng)[0]);}
  const rest=shuffle(questions.filter(q=>!selected.includes(q)),rng);return shuffle([...selected,...rest].slice(0,count),rng);
 }
-const fresh=()=>({schema:1,completed:{},stats:{},wrong:[],starred:[],history:[],session:null,...(root.SWEET_COACH?{sweet:root.SWEET_COACH.fresh()}:{})});
+const fresh=()=>({schema:1,completed:{},stats:{},wrong:[],starred:[],history:[],session:null,...(root.SWEET_COACH?{sweet:root.SWEET_COACH.fresh()}:{}),...(root.WATER_HOMEWORK?{homework:root.WATER_HOMEWORK.fresh()}:{})});
 function record(state,q,response){const correct=judge(q,response);const previous=state.stats[q.id]||{attempts:0,correct:0,misses:0};state.stats[q.id]={attempts:previous.attempts+1,correct:previous.correct+(correct?1:0),misses:previous.misses+(correct?0:1),last:correct};state.wrong=state.wrong.filter(id=>id!==q.id);if(!correct)state.wrong.push(q.id);if(root.SWEET_COACH){state.sweet||=root.SWEET_COACH.fresh();root.SWEET_COACH.record(state.sweet,q.id,correct);}return correct;}
 function finish(state,session){if(session.resultRecorded)return;const count=session.ids.length;const correct=Object.values(session.answers).filter(a=>a.correct).length;const score=Math.round(correct/count*100);const passed=correct/count>=0.8;const stars=score===100?3:score>=90?2:passed?1:0;const result={score,correct,count,passed,stars};session.result=result;session.done=true;session.resultRecorded=true;
 if(session.mode==='stage'||session.mode==='boss'){const key=session.mode==='boss'?'boss':String(session.ch);const old=state.completed[key];if(!old||score>old.score)state.completed[key]={...result,date:new Date().toISOString()};}
@@ -43,6 +43,7 @@ function validateState(input,questions){
   if(v.done){if(Object.keys(v.answers).length!==v.ids.length)fail();s.session.resultRecorded=false;const dummy=fresh();finish(dummy,s.session);}
  }
  if(root.SWEET_COACH){s.sweet=root.SWEET_COACH.validate(input.sweet,questions);for(const id of s.wrong)if(!s.sweet.debt[id])s.sweet.debt[id]={reviewed:false,note:'',date:root.SWEET_COACH.dayKey()};for(const id of Object.keys(s.sweet.debt))if(!s.wrong.includes(id))delete s.sweet.debt[id];}
+ if(root.WATER_HOMEWORK)s.homework=root.WATER_HOMEWORK.validate(input.homework);
  return s;
 }
 const api={shuffle,norm,judge,pick,fresh,record,finish,unlocked,validateState};root.WATER_ENGINE=api;if(typeof module!=='undefined')module.exports=api;
