@@ -1,0 +1,198 @@
+{
+  "source": "水💦28分.pdf",
+  "method": "原始 PDF 页面渲染后裁取题目区域；保留原有批注，不重绘、不改写图像。",
+  "images": [
+    {
+      "file": "class60.jpg",
+      "sourcePage": 2,
+      "crop": [
+        0.228,
+        0.218,
+        0.782,
+        0.418
+      ],
+      "width": 1709,
+      "height": 880
+    },
+    {
+      "file": "class61.jpg",
+      "sourcePage": 2,
+      "crop": [
+        0.228,
+        0.495,
+        0.782,
+        0.73
+      ],
+      "width": 1709,
+      "height": 1034
+    },
+    {
+      "file": "class54.jpg",
+      "sourcePage": 3,
+      "crop": [
+        0.438,
+        0.605,
+        0.982,
+        0.93
+      ],
+      "width": 1678,
+      "height": 1430
+    },
+    {
+      "file": "class52.jpg",
+      "sourcePage": 4,
+      "crop": [
+        0.139,
+        0.228,
+        0.688,
+        0.482
+      ],
+      "width": 1708,
+      "height": 1118
+    },
+    {
+      "file": "class53.jpg",
+      "sourcePage": 4,
+      "crop": [
+        0.139,
+        0.485,
+        0.688,
+        0.74
+      ],
+      "width": 1708,
+      "height": 1122
+    },
+    {
+      "file": "class49.jpg",
+      "sourcePage": 5,
+      "crop": [
+        0.5,
+        0.64,
+        0.978,
+        0.882
+      ],
+      "width": 1487,
+      "height": 1065
+    },
+    {
+      "file": "hw01-04.jpg",
+      "sourcePage": 6,
+      "crop": [
+        0.217,
+        0.007,
+        0.737,
+        0.285
+      ],
+      "width": 1617,
+      "height": 1223
+    },
+    {
+      "file": "hw05-08.jpg",
+      "sourcePage": 6,
+      "crop": [
+        0.217,
+        0.29,
+        0.737,
+        0.568
+      ],
+      "width": 1617,
+      "height": 1223
+    },
+    {
+      "file": "hw09-12.jpg",
+      "sourcePage": 6,
+      "crop": [
+        0.21,
+        0.573,
+        0.745,
+        0.91
+      ],
+      "width": 1664,
+      "height": 1483
+    },
+    {
+      "file": "hw21-23.jpg",
+      "sourcePage": 7,
+      "crop": [
+        0.107,
+        0.073,
+        0.659,
+        0.413
+      ],
+      "width": 1716,
+      "height": 1496
+    },
+    {
+      "file": "hw13-17.jpg",
+      "sourcePage": 8,
+      "crop": [
+        0.147,
+        0.05,
+        0.697,
+        0.34
+      ],
+      "width": 1711,
+      "height": 1276
+    },
+    {
+      "file": "hw18-20.jpg",
+      "sourcePage": 8,
+      "crop": [
+        0.142,
+        0.37,
+        0.695,
+        0.69
+      ],
+      "width": 1719,
+      "height": 1408
+    },
+    {
+      "file": "class0930.jpg",
+      "sourcePage": 9,
+      "crop": [
+        0.105,
+        0.007,
+        0.659,
+        0.34
+      ],
+      "width": 1722,
+      "height": 1465
+    },
+    {
+      "file": "class51.jpg",
+      "sourcePage": 10,
+      "crop": [
+        0.085,
+        0.018,
+        0.637,
+        0.24
+      ],
+      "width": 1717,
+      "height": 977
+    },
+    {
+      "file": "class55.jpg",
+      "sourcePage": 10,
+      "crop": [
+        0.085,
+        0.24,
+        0.637,
+        0.438
+      ],
+      "width": 1717,
+      "height": 871
+    },
+    {
+      "file": "hw24-26.jpg",
+      "sourcePage": 11,
+      "crop": [
+        0.02,
+        0.004,
+        0.574,
+        0.34
+      ],
+      "width": 1723,
+      "height": 1478
+    }
+  ]
+}

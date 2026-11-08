@@ -3,11 +3,11 @@ const fs=require('node:fs'),path=require('node:path');
 const D=require('./docs/homework-data.js'),H=require('./docs/homework.js');
 const C=require('./docs/coach.js'),E=require('./docs/engine.js'),bank=require('./docs/bank.js');
 const questions=D.questions,assigned=questions.filter(q=>q.group==='assigned'),classroom=questions.filter(q=>q.group==='classroom');
-assert.equal(questions.length,36);assert.equal(assigned.length,26);assert.equal(classroom.length,10);
-assert.equal(new Set(questions.map(q=>q.id)).size,36);
+assert.equal(questions.length,37);assert.equal(assigned.length,26);assert.equal(classroom.length,11);
+assert.equal(new Set(questions.map(q=>q.id)).size,37);
 assert.deepEqual(assigned.map(q=>Number(q.number)),Array.from({length:26},(_,i)=>i+1));
 assert.equal(classroom.filter(q=>q.type==='boolean').length,3);
-assert.equal(classroom.filter(q=>q.type==='single').length,7);
+assert.equal(classroom.filter(q=>q.type==='single').length,8);
 assert.equal(classroom.filter(q=>q.number==='52').length,1);
 assert.equal(D.notice.start,'2026-11-11T12:20');assert.equal(C.DEFAULT_EXAM,D.notice.start);
 for(const q of questions){
@@ -17,9 +17,11 @@ for(const q of questions){
  assert.ok(q.sourcePages.length&&q.sourcePages.every(p=>Number.isInteger(p)&&p>=1&&p<=11));
  assert.ok(Number.isInteger(q.complete)&&q.complete>=1&&q.complete<=34);
  if(q.options)assert.ok(Number.isInteger(q.answer)&&q.answer>=0&&q.answer<q.options.length);
+ assert.ok(q.original?.src&&q.evidence);
+ assert.ok(fs.existsSync(path.join(__dirname,'docs',q.original.src)),q.id+' original image');
 }
 const s=H.fresh();
-assert.deepEqual(H.summary(s),{new:36,review:0,mastered:0});
+assert.deepEqual(H.summary(s),{new:37,review:0,mastered:0});
 assert.throws(()=>H.mark(s,'hw01','mastered'));
 H.entry(s,'hw01').text='金属、塑料、复合管';
 H.reveal(s,'hw01');H.mark(s,'hw01','mastered');
@@ -29,7 +31,7 @@ H.entry(s,'class49').choice=1;H.reveal(s,'class49');
 assert.equal(s.answers.class49.status,'review');
 H.entry(s,'class55').choice=1;H.reveal(s,'class55');
 assert.equal(s.answers.class55.status,'mastered');
-assert.deepEqual(H.summary(s),{new:33,review:1,mastered:2});
+assert.deepEqual(H.summary(s),{new:34,review:1,mastered:2});
 assert.deepEqual(H.validate(JSON.parse(JSON.stringify(s))),s);
 assert.deepEqual(H.validate(undefined),H.fresh());
 for(const bad of [null,[],{version:2,answers:{}},{version:1,answers:[]},
@@ -62,7 +64,7 @@ assert.ok(H.view(restored,helpers).includes('将倒计时同步为 12:20'));
 H.action('hw-exam',undefined,context);assert.equal(restored.sweet.exam,D.notice.start);assert.equal(saves,1);
 assert.ok(!H.view(restored,helpers).includes('将倒计时同步为 12:20'));
 assert.equal(H.action('nav','bank',context),false);
-H.action('hw-group','classroom',context);assert.equal(H.matches(restored.homework).length,10);
+H.action('hw-group','classroom',context);assert.equal(H.matches(restored.homework).length,11);
 H.change({target:{id:'hw-status',value:'review'}},context.render);
 assert.deepEqual(H.matches(restored.homework).map(q=>q.id),['class49']);
 H.action('hw-open','class49',context);assert.equal(H.hash(),'#homework/class49');
@@ -82,4 +84,22 @@ for(const file of scripts)assert.ok(fs.existsSync(path.join(__dirname,'docs',fil
 assert.ok(scripts.indexOf('homework-data.js')<scripts.indexOf('homework.js'));
 assert.ok(scripts.indexOf('homework.js')<scripts.indexOf('engine.js'));
 assert.ok(scripts.indexOf('engine.js')<scripts.indexOf('app.js'));
-console.log('PASS: 36 sourced homework questions; answer checks, self-assessment, filters, routes, legacy migration, backup, safe drafts and exam sync.');
+// Ambiguous and version-dependent questions must not auto-award mastery from an annotation.
+for(const id of ['class51','class60']){
+ const review=H.fresh();H.entry(review,id).choice=3;H.reveal(review,id);
+ assert.equal(review.answers[id].status,'review');
+ H.mark(review,id,'mastered');assert.equal(review.answers[id].status,'mastered');
+}
+// Direct classroom entry resets prior filters; the diagram is available before answering.
+assert.equal(H.route('#classroom'),true);assert.equal(H.hash(),'#classroom');
+assert.equal(H.matches(restored.homework).length,11);
+assert.ok(H.view(restored,helpers).includes('答案核对记录'));
+assert.equal(H.route('#homework/class54'),true);
+html=H.view(restored,helpers);
+assert.ok(html.includes('class="hw-original" open'));
+assert.ok(html.includes('classroom/class54.jpg'));
+assert.ok(!html.includes('参考答案：'));
+const diagram=H.fresh();H.entry(diagram,'class54').choice=1;H.reveal(diagram,'class54');
+assert.equal(diagram.answers.class54.status,'mastered');
+assert.deepEqual(H.validate(JSON.parse(JSON.stringify(diagram))),diagram);
+console.log('PASS: 37 sourced homework questions; original images, diagram route, cautious grading, legacy migration, backup and exam sync.');
