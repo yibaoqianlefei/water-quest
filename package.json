@@ -4,6 +4,6 @@
   "version": "1.0.0",
   "description": "建筑设备水复习闯关题库与复习资料",
   "scripts": {
-    "test": "node --require ./docs/coach.js --require ./docs/homework-data.js --require ./docs/homework.js test.cjs && node test-coach.cjs && node test-sound.cjs && node test-homework.cjs"
+    "test": "node --require ./docs/coach.js --require ./docs/homework-data.js --require ./docs/homework.js test.cjs && node test-coach.cjs && node test-sound.cjs && node test-homework.cjs && node --require ./docs/coach.js --require ./docs/homework-data.js --require ./docs/homework.js test-exam.cjs"
   }
 }

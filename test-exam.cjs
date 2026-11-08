@@ -1,0 +1,32 @@
+const assert=require('node:assert/strict'),fs=require('node:fs');
+const original=require('./docs/bank.js'),E=require('./docs/engine.js');
+const before=original.questions.map(q=>({id:q.id,answer:JSON.stringify(q.answer)}));
+const X=require('./docs/exam-data.js'),H=require('./docs/homework-data.js');
+assert.equal(X.questions.length,200);
+assert.equal(new Set(X.questions.map(q=>q.id)).size,200);
+assert.deepEqual(Object.fromEntries(Object.keys(X.types).map(type=>[type,X.questions.filter(q=>X.typeOf(q)===type).length])),{fill:22,boolean:41,single:49,multi:15,short:56,number:17});
+for(const old of before)assert.equal(JSON.stringify(X.questions.find(q=>q.id===old.id).answer),old.answer,'old key preserved '+old.id);
+for(const q of X.questions.filter(q=>q.type==='short')){
+ const source=H.questions.find(h=>h.id===q.homeworkId);
+ assert.deepEqual(q.points,source.points);assert.equal(q.prompt,source.prompt);
+ assert.equal(E.judge(q,{text:'独立作答',points:q.points.map(()=>true)}),true);
+ assert.equal(E.judge(q,{text:'独立作答',points:q.points.map((_,i)=>i!==0)}),false);
+ assert.equal(E.judge(q,{text:'',points:q.points.map(()=>true)}),false);
+ assert.equal(E.judge(q,q.answer),false,'no automatic semantic grading');
+}
+const short=X.questions.find(q=>q.type==='short'&&q.points.length!==3);
+const state=E.fresh();state.session={mode:'free',ch:null,title:'简答专项',ids:[short.id],orders:{},cursor:0,answers:{},done:false,resultRecorded:false,definitionDraft:{id:short.id,text:'我的简答\n第二点',reviewing:true,points:short.points.map((_,i)=>i===0)}};
+assert.deepEqual(E.validateState(JSON.parse(JSON.stringify(state)),X.questions).session.definitionDraft,state.session.definitionDraft);
+const bad=JSON.parse(JSON.stringify(state));bad.session.definitionDraft.points=[true];assert.throws(()=>E.validateState(bad,X.questions));
+const response={text:'我的简答',points:short.points.map(()=>true)};
+state.session.answers[short.id]={response,correct:E.record(state,short,response)};delete state.session.definitionDraft;E.finish(state,state.session);
+assert.equal(E.validateState(JSON.parse(JSON.stringify(state)),X.questions).session.result.passed,true);
+const legacy=E.fresh();E.record(legacy,original.questions[0],original.questions[0].answer);
+assert.deepEqual(E.validateState(JSON.parse(JSON.stringify(legacy)),X.questions).stats,legacy.stats);
+assert.equal(X.typeOf(X.questions.find(q=>q.id==='c1-13')),'fill');
+assert.equal(X.typeOf(X.questions.find(q=>q.id==='c8-01')),'number');
+const index=fs.readFileSync('./docs/index.html','utf8');
+assert.ok(index.indexOf('bank.js')<index.indexOf('exam-data.js'));
+assert.ok(index.indexOf('homework-data.js')<index.indexOf('exam-data.js'));
+assert.ok(index.indexOf('exam-data.js')<index.indexOf('app.js'));
+console.log('PASS: six exam categories, 200 questions, 24 sourced short answers, variable rubric lengths, legacy answer keys and progress recovery.');

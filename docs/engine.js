@@ -2,9 +2,10 @@
 'use strict';
 const shuffle=(a,rng=Math.random)=>{a=[...a];for(let i=a.length-1;i>0;i--){let j=Math.floor(rng()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
 const norm=s=>String(s).normalize('NFKC').toLowerCase().replace(/[\s，。,.、；;：:！!？?]/g,'').trim();
+const isWritten=q=>q.type==='definition'||q.type==='short';
 function validDefinition(q,r){return !!r&&typeof r.text==='string'&&r.text.trim().length>0&&r.text.length<=4000&&Array.isArray(r.points)&&r.points.length===q.points.length&&r.points.every(v=>typeof v==='boolean');}
 function judge(q,response){
- if(q.type==='definition')return validDefinition(q,response)&&response.points.every(Boolean);
+ if(isWritten(q))return validDefinition(q,response)&&response.points.every(Boolean);
  if(q.type==='multi') return Array.isArray(response)&&response.length===q.answer.length&&new Set(response).size===response.length&&q.answer.every(x=>response.includes(x));
  if(q.type==='fill') return q.answer.some(x=>norm(x)===norm(response));
  if(q.type==='number'){
@@ -36,15 +37,15 @@ function validateState(input,questions){
  s.history=input.history.slice(0,60).map(v=>{if(!v||typeof v.title!=='string'||!Number.isFinite(v.score)||v.score<0||v.score>100||!Number.isInteger(v.count)||v.count<1||!Number.isInteger(v.correct)||v.correct<0||v.correct>v.count)fail();return {title:v.title.slice(0,100),mode:String(v.mode),score:v.score,count:v.count,correct:v.correct,passed:!!v.passed,stars:Number(v.stars)||0,date:String(v.date)};});
  if(input.session){const v=input.session;if(!Array.isArray(v.ids)||!v.ids.length||v.ids.length>questions.length||v.ids.some(id=>!ids.has(id))||new Set(v.ids).size!==v.ids.length||!v.orders||!v.answers||!Number.isInteger(v.cursor)||v.cursor<0||v.cursor>=v.ids.length||!['stage','boss','wrong','free','starred'].includes(v.mode))fail();
   for(const id of v.ids){const q=qmap[id];if(q.options){const o=v.orders[id];if(!Array.isArray(o)||o.length!==q.options.length||new Set(o).size!==o.length||o.some(i=>!Number.isInteger(i)||i<0||i>=q.options.length))fail();}}
-  for(const [id,a] of Object.entries(v.answers)){if(!v.ids.includes(id)||!a||typeof a.correct!=='boolean'||(qmap[id].type==='definition'&&!validDefinition(qmap[id],a.response))||judge(qmap[id],a.response)!==a.correct)fail();}
+  for(const [id,a] of Object.entries(v.answers)){if(!v.ids.includes(id)||!a||typeof a.correct!=='boolean'||(isWritten(qmap[id])&&!validDefinition(qmap[id],a.response))||judge(qmap[id],a.response)!==a.correct)fail();}
   if(v.mode==='stage'&&(!Number.isInteger(v.ch)||v.ch<1||v.ch>8))fail();
   s.session={mode:v.mode,ch:v.ch,title:String(v.title).slice(0,100),ids:v.ids,orders:v.orders,cursor:v.cursor,answers:v.answers,done:!!v.done,resultRecorded:!!v.resultRecorded};
-  if(v.definitionDraft){const d=v.definitionDraft,q=qmap[d.id];if(!q||q.type!=='definition'||d.id!==v.ids[v.cursor]||v.answers[d.id]||v.done||typeof d.text!=='string'||d.text.length>4000||typeof d.reviewing!=='boolean'||!Array.isArray(d.points)||d.points.length!==q.points.length||d.points.some(p=>typeof p!=='boolean')||(d.reviewing&&!d.text.trim())||(!d.reviewing&&d.points.some(Boolean)))fail();s.session.definitionDraft={id:d.id,text:d.text,reviewing:d.reviewing,points:[...d.points]};}
+  if(v.definitionDraft){const d=v.definitionDraft,q=qmap[d.id];if(!q||!isWritten(q)||d.id!==v.ids[v.cursor]||v.answers[d.id]||v.done||typeof d.text!=='string'||d.text.length>4000||typeof d.reviewing!=='boolean'||!Array.isArray(d.points)||d.points.length!==q.points.length||d.points.some(p=>typeof p!=='boolean')||(d.reviewing&&!d.text.trim())||(!d.reviewing&&d.points.some(Boolean)))fail();s.session.definitionDraft={id:d.id,text:d.text,reviewing:d.reviewing,points:[...d.points]};}
   if(v.done){if(Object.keys(v.answers).length!==v.ids.length)fail();s.session.resultRecorded=false;const dummy=fresh();finish(dummy,s.session);}
  }
  if(root.SWEET_COACH){s.sweet=root.SWEET_COACH.validate(input.sweet,questions);for(const id of s.wrong)if(!s.sweet.debt[id])s.sweet.debt[id]={reviewed:false,note:'',date:root.SWEET_COACH.dayKey()};for(const id of Object.keys(s.sweet.debt))if(!s.wrong.includes(id))delete s.sweet.debt[id];}
  if(root.WATER_HOMEWORK)s.homework=root.WATER_HOMEWORK.validate(input.homework);
  return s;
 }
-const api={shuffle,norm,judge,pick,fresh,record,finish,unlocked,validateState};root.WATER_ENGINE=api;if(typeof module!=='undefined')module.exports=api;
+const api={shuffle,norm,isWritten,judge,pick,fresh,record,finish,unlocked,validateState};root.WATER_ENGINE=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
