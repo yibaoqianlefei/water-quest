@@ -13,3 +13,12 @@
 .definition-input.concise-input{min-height:110px}
 
 .definition-more p{white-space:pre-line}
+
+/* Full chapter revision unlocked after passing the chapter. */
+.stage-review{width:100%;margin-top:14px}.chapter-review-link{display:block;margin:7px 0 0 auto;min-height:32px}.chapter-review-locked{display:block;color:var(--muted);font-size:10px;margin-top:6px}
+.chapter-review-tools{padding:22px;background:#fff8fc;border:2px solid #b4a1b0;border-radius:17px;margin:22px 0;box-shadow:3px 4px 0 #ebdce5}
+.chapter-review-actions{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:18px}.chapter-review-tools label{display:block;font-size:13px;margin-bottom:8px;font-weight:600}
+.chapter-review-tools select{width:100%;min-width:0;max-width:100%;min-height:44px;border:2px solid #a9bfce;border-radius:10px;padding:10px;background:#fff;color:var(--ink);font:inherit;font-size:13px}
+.chapter-review-tools p{font-size:12px;color:var(--muted);margin:12px 0 0}.chapter-review-item{scroll-margin-top:24px;margin:24px 0}
+.chapter-review-row{display:flex;align-items:center;justify-content:space-between;gap:12px}.chapter-review-row>span{font-size:12px;color:var(--muted)}.chapter-review-item .bank-item{margin-top:8px}
+@media(max-width:720px){.chapter-review-item{scroll-margin-top:155px}.chapter-review-tools{padding:16px}.chapter-review-actions .btn{width:100%;font-size:13px}.chapter-review-row{gap:7px}}

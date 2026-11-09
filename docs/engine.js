@@ -27,6 +27,8 @@ function finish(state,session){if(session.resultRecorded)return;const count=sess
 if(session.mode==='stage'||session.mode==='boss'){const key=session.mode==='boss'?'boss':String(session.ch);const old=state.completed[key];if(!old||score>old.score)state.completed[key]={...result,date:new Date().toISOString()};}
 state.history.unshift({title:session.title,mode:session.mode,...result,date:new Date().toISOString()});state.history=state.history.slice(0,60);return result;}
 function unlocked(state,ch){return ch===1||!!state.completed[String(ch-1)]?.passed;}
+function canReview(state,ch){return Number.isInteger(ch)&&ch>=1&&ch<=8&&state.completed[String(ch)]?.passed===true;}
+function reviewQuestions(state,questions,ch){return canReview(state,ch)?questions.filter(q=>q.ch===ch):[];}
 function validateState(input,questions){
  const ids=new Set(questions.map(q=>q.id));const qmap=Object.fromEntries(questions.map(q=>[q.id,q]));
  const fail=()=>{throw new Error('备份结构不完整或与当前题库不匹配');};
@@ -35,10 +37,11 @@ function validateState(input,questions){
  for(const [id,v] of Object.entries(input.stats)){if(!ids.has(id)||!v||![v.attempts,v.correct,v.misses].every(n=>Number.isInteger(n)&&n>=0)||v.correct+v.misses!==v.attempts||typeof v.last!=='boolean')fail();s.stats[id]={attempts:v.attempts,correct:v.correct,misses:v.misses,last:v.last};}
  for(const [key,v] of Object.entries(input.completed)){if(!/^(?:[1-8]|boss)$/.test(key)||!v||!Number.isFinite(v.score)||v.score<0||v.score>100||typeof v.passed!=='boolean'||!Number.isInteger(v.stars)||v.stars<0||v.stars>3||v.passed!==(v.score>=80))fail();s.completed[key]={score:v.score,passed:v.passed,stars:v.stars,date:String(v.date||'')};}
  s.history=input.history.slice(0,60).map(v=>{if(!v||typeof v.title!=='string'||!Number.isFinite(v.score)||v.score<0||v.score>100||!Number.isInteger(v.count)||v.count<1||!Number.isInteger(v.correct)||v.correct<0||v.correct>v.count)fail();return {title:v.title.slice(0,100),mode:String(v.mode),score:v.score,count:v.count,correct:v.correct,passed:!!v.passed,stars:Number(v.stars)||0,date:String(v.date)};});
- if(input.session){const v=input.session;if(!Array.isArray(v.ids)||!v.ids.length||v.ids.length>questions.length||v.ids.some(id=>!ids.has(id))||new Set(v.ids).size!==v.ids.length||!v.orders||!v.answers||!Number.isInteger(v.cursor)||v.cursor<0||v.cursor>=v.ids.length||!['stage','boss','wrong','free','starred'].includes(v.mode))fail();
+ if(input.session){const v=input.session;if(!Array.isArray(v.ids)||!v.ids.length||v.ids.length>questions.length||v.ids.some(id=>!ids.has(id))||new Set(v.ids).size!==v.ids.length||!v.orders||!v.answers||!Number.isInteger(v.cursor)||v.cursor<0||v.cursor>=v.ids.length||!['stage','boss','wrong','free','starred','review'].includes(v.mode))fail();
   for(const id of v.ids){const q=qmap[id];if(q.options){const o=v.orders[id];if(!Array.isArray(o)||o.length!==q.options.length||new Set(o).size!==o.length||o.some(i=>!Number.isInteger(i)||i<0||i>=q.options.length))fail();}}
   for(const [id,a] of Object.entries(v.answers)){if(!v.ids.includes(id)||!a||typeof a.correct!=='boolean'||(isWritten(qmap[id])&&!validDefinition(qmap[id],a.response))||judge(qmap[id],a.response)!==a.correct)fail();}
   if(v.mode==='stage'&&(!Number.isInteger(v.ch)||v.ch<1||v.ch>8))fail();
+  if(v.mode==='review'&&(!canReview(s,v.ch)||v.ids.some(id=>qmap[id].ch!==v.ch)))fail();
   s.session={mode:v.mode,ch:v.ch,title:String(v.title).slice(0,100),ids:v.ids,orders:v.orders,cursor:v.cursor,answers:v.answers,done:!!v.done,resultRecorded:!!v.resultRecorded};
   if(v.definitionDraft){const d=v.definitionDraft,q=qmap[d.id];if(!q||!isWritten(q)||d.id!==v.ids[v.cursor]||v.answers[d.id]||v.done||typeof d.text!=='string'||d.text.length>4000||typeof d.reviewing!=='boolean'||!Array.isArray(d.points)||d.points.length!==q.points.length||d.points.some(p=>typeof p!=='boolean')||(d.reviewing&&!d.text.trim())||(!d.reviewing&&d.points.some(Boolean)))fail();s.session.definitionDraft={id:d.id,text:d.text,reviewing:d.reviewing,points:[...d.points]};}
   if(v.done){if(Object.keys(v.answers).length!==v.ids.length)fail();s.session.resultRecorded=false;const dummy=fresh();finish(dummy,s.session);}
@@ -47,5 +50,5 @@ function validateState(input,questions){
  if(root.WATER_HOMEWORK)s.homework=root.WATER_HOMEWORK.validate(input.homework);
  return s;
 }
-const api={shuffle,norm,isWritten,judge,pick,fresh,record,finish,unlocked,validateState};root.WATER_ENGINE=api;if(typeof module!=='undefined')module.exports=api;
+const api={shuffle,norm,isWritten,judge,pick,fresh,record,finish,unlocked,canReview,reviewQuestions,validateState};root.WATER_ENGINE=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
