@@ -11,3 +11,5 @@
 .definition-more>summary{cursor:pointer;padding:10px 0;min-height:44px;color:var(--green);font-size:12px;font-weight:600;list-style-position:inside}
 .definition-more>div{padding:2px 0 6px}.definition-more p{margin:8px 0}.definition-more .source{margin-top:10px}
 .definition-input.concise-input{min-height:110px}
+
+.definition-more p{white-space:pre-line}
