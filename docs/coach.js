@@ -20,7 +20,7 @@ for(const r of rewards){if(rewardMeta[r.id])[r.category,r.time,r.budget]=rewardM
 const dayKey=(now=Date.now())=>new Date(now+ZONE).toISOString().slice(0,10);
 function examTime(local){if(typeof local!=='string'||!/^20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(local))throw Error('请填写完整的考试日期和时间');const time=Date.parse(local+':00+08:00');if(!Number.isFinite(time)||new Date(time+ZONE).toISOString().slice(0,16)!==local)throw Error('考试日期或时间无效');return time;}
 const emptyDay=date=>({date,seen:[],credited:[],repaired:[],streak:0,streakBonus:false,goalBonus:false});
-const fresh=(now=Date.now())=>({version:1,exam:DEFAULT_EXAM,hearts:0,day:emptyDay(dayKey(now)),debt:{},rewards:[],receipt:null});
+const fresh=(now=Date.now())=>({version:1,exam:DEFAULT_EXAM,hearts:0,day:emptyDay(dayKey(now)),debt:{},rewards:[],receipt:null,refund:null});
 function today(s,now=Date.now()){const key=dayKey(now);if(s.day.date!==key)s.day=emptyDay(key);return s.day;}
 function record(s,id,correct,now=Date.now()){
  const d=today(s,now),before=s.hearts,notes=[];if(!d.seen.includes(id))d.seen.push(id);
@@ -34,8 +34,11 @@ function record(s,id,correct,now=Date.now()){
 }
 function review(s,id,note){if(!s.debt[id])return;const value=String(note).trim();if(value.replace(/\s/g,'').length<6||value.length>300)throw Error('请用至少 6 个字写下易错点，最多 300 字');s.debt[id].note=value;s.debt[id].reviewed=true;}
 const needsReview=(s,id)=>!!s.debt[id]&&!s.debt[id].reviewed;
-function redeem(s,id,now=Date.now()){const reward=rewards.find(r=>r.id===id);if(!reward)throw Error('未找到奖励卡');if(s.hearts<reward.cost)throw Error('心心还不够，再学几道就更接近啦');if(s.rewards.length>=10000)throw Error('卡包已达 10000 张，请先导出备份');let seq=0,uid;do{uid='coupon-'+now+'-'+seq++;}while(s.rewards.some(r=>r.uid===uid));s.hearts-=reward.cost;s.rewards.unshift({id,at:now,uid,usedAt:null});return reward;}
+function redeem(s,id,now=Date.now()){const reward=rewards.find(r=>r.id===id);if(!reward)throw Error('未找到奖励卡');if(s.hearts<reward.cost)throw Error('心心还不够，再学几道就更接近啦');if(s.rewards.length>=10000)throw Error('卡包已达 10000 张，请先导出备份');let seq=0,uid;do{uid='coupon-'+now+'-'+seq++;}while(s.rewards.some(r=>r.uid===uid));s.hearts-=reward.cost;s.rewards.unshift({id,at:now,uid,usedAt:null,cost:reward.cost});return reward;}
 function setRewardUsed(s,uid,used,now=Date.now()){const r=s.rewards.find(r=>r.uid===uid);if(!r)throw Error('未找到这张奖励卡');if(typeof used!=='boolean'||!Number.isFinite(now)||now<0)throw Error('奖励状态无效');if(used&&r.usedAt==null)r.usedAt=Math.max(now,r.at);if(!used)r.usedAt=null;return r;}
+function validateRefund(r){if(r==null)return null;if(r.version!==1||!Number.isSafeInteger(r.amount)||r.amount<1||r.amount>1000000||!Number.isInteger(r.count)||r.count<1||r.count>10000||!Number.isFinite(r.at)||r.at<0||r.at>8640000000000000)throw Error('积分返还记录无效');return {version:1,amount:r.amount,count:r.count,at:r.at};}
+function refundPreview(s){return {count:s.rewards.length,amount:s.rewards.reduce((n,r)=>n+(r.cost??rewards.find(x=>x.id===r.id).cost),0)};}
+function refundOnce(s,now=Date.now()){if(s.refund)throw Error('这次积分返还已领取，仅限一次');const p=refundPreview(s);if(!p.amount)throw Error('暂无可返还的兑换积分');if(s.hearts+p.amount>1000000)throw Error('积分余额已达上限，暂时无法返还');const receipt=validateRefund({version:1,...p,at:now});s.hearts+=receipt.amount;s.refund=receipt;return receipt;}
 function countdown(s,now=Date.now()){const diff=examTime(s.exam)-now;if(diff<=0)return {arrived:true,days:0,hours:0,minutes:0};const minutes=Math.ceil(diff/60000);return {arrived:false,days:Math.floor(minutes/1440),hours:Math.floor(minutes%1440/60),minutes:minutes%60};}
 function plan(s,now=Date.now()){
  const end=Date.parse(s.exam.slice(0,10)+'T00:00:00+08:00'),todayKey=dayKey(now);
@@ -53,15 +56,15 @@ function validate(input,questions,now=Date.now()){
  if(input===undefined||input===null)return fresh(now);const fail=()=>{throw Error('甜蜜奖励记录不完整，请检查备份文件');};
  const ids=new Set(questions.map(q=>q.id)),validInt=n=>Number.isSafeInteger(n)&&n>=0&&n<=1000000;
  if(!input||input.version!==1||!validInt(input.hearts)||!input.day||!input.debt||Array.isArray(input.debt)||!Array.isArray(input.rewards))fail();
- examTime(input.exam);const s=fresh(now);s.exam=input.exam;s.hearts=input.hearts;
+ examTime(input.exam);const s=fresh(now);s.exam=input.exam;s.hearts=input.hearts;s.refund=validateRefund(input.refund);
  const d=input.day;if(!/^20\d{2}-\d{2}-\d{2}$/.test(d.date)||!validInt(d.streak)||typeof d.streakBonus!=='boolean'||typeof d.goalBonus!=='boolean')fail();
  for(const key of ['seen','credited','repaired'])if(!Array.isArray(d[key])||d[key].some(id=>!ids.has(id)))fail();
  s.day={date:d.date,seen:[...new Set(d.seen)],credited:[...new Set(d.credited)],repaired:[...new Set(d.repaired)],streak:d.streak,streakBonus:d.streakBonus,goalBonus:d.goalBonus};
  for(const [id,v] of Object.entries(input.debt)){if(!ids.has(id)||!v||typeof v.reviewed!=='boolean'||typeof v.note!=='string'||v.note.length>300||(v.reviewed&&v.note.replace(/\s/g,'').length<6)||typeof v.date!=='string')fail();s.debt[id]={reviewed:v.reviewed,note:v.note,date:v.date.slice(0,10)};}
  if(input.rewards.length>10000)fail();const uids=new Set();
- s.rewards=input.rewards.map((r,i)=>{if(!r||!rewards.some(x=>x.id===r.id)||!Number.isFinite(r.at)||r.at<0||r.at>8640000000000000)fail();const uid=r.uid===undefined?'legacy-'+i+'-'+r.at:r.uid;if(typeof uid!=='string'||!/^[-a-zA-Z0-9]{1,100}$/.test(uid)||uids.has(uid))fail();uids.add(uid);const usedAt=r.usedAt??null;if(usedAt!==null&&(!Number.isFinite(usedAt)||usedAt<r.at||usedAt>8640000000000000))fail();return {id:r.id,at:r.at,uid,usedAt};});
+ s.rewards=input.rewards.map((r,i)=>{if(!r||!rewards.some(x=>x.id===r.id)||!Number.isFinite(r.at)||r.at<0||r.at>8640000000000000)fail();const uid=r.uid===undefined?'legacy-'+i+'-'+r.at:r.uid;if(typeof uid!=='string'||!/^[-a-zA-Z0-9]{1,100}$/.test(uid)||uids.has(uid))fail();uids.add(uid);const usedAt=r.usedAt??null;if(usedAt!==null&&(!Number.isFinite(usedAt)||usedAt<r.at||usedAt>8640000000000000))fail();const cost=r.cost??rewards.find(x=>x.id===r.id).cost;if(!Number.isSafeInteger(cost)||cost<1||cost>1000000)fail();return {id:r.id,at:r.at,uid,usedAt,cost};});
  if(input.receipt){const r=input.receipt;if(!ids.has(r.id)||!Number.isFinite(r.delta)||typeof r.text!=='string'||r.text.length>600||!Number.isFinite(r.at))fail();s.receipt={id:r.id,delta:r.delta,text:r.text,at:r.at};}
  today(s,now);return s;
 }
-const api={DEFAULT_EXAM,rewards,dayKey,examTime,fresh,today,record,review,needsReview,redeem,setRewardUsed,countdown,plan,validate};root.SWEET_COACH=api;if(typeof module!=='undefined')module.exports=api;
+const api={DEFAULT_EXAM,rewards,dayKey,examTime,fresh,today,record,review,needsReview,redeem,setRewardUsed,validateRefund,refundPreview,refundOnce,countdown,plan,validate};root.SWEET_COACH=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
