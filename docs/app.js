@@ -6,7 +6,7 @@ const byId=Object.fromEntries(Q.map(q=>[q.id,q]));
 const KEY='water-quest-progress-v1';
 const RF=window.WATER_REFUND_STORE.create({storage:{getItem:k=>localStorage.getItem(k),setItem:(k,v)=>localStorage.setItem(k,v)},engine:E,questions:Q,key:KEY});
 let refundBusy=false;
-async function claimRewardRefund(){if(refundBusy)return;refundBusy=true;try{const claim=()=>{state=RF.claim(state);render();toast('已返还 '+state.sweet.refund.amount+' 颗心心，本次机会已使用。');};if(navigator.locks)await navigator.locks.request(KEY+'-refund',claim);else claim();}catch(e){try{const raw=localStorage.getItem(KEY);if(raw){state=RF.retain(E.validateState(JSON.parse(raw),Q));render();}}catch(ignore){}toast('未发放积分：'+e.message);}finally{refundBusy=false;}}
+async function claimRewardRefund(){if(refundBusy)return;refundBusy=true;try{const claim=()=>{state=RF.claim(state);render();toast('已返还 '+state.sweet.refund.amount+' 颗心心，对应旧奖励已取消。');};if(navigator.locks)await navigator.locks.request(KEY+'-refund',claim);else claim();}catch(e){try{const raw=localStorage.getItem(KEY);if(raw){state=RF.retain(E.validateState(JSON.parse(raw),Q));render();}}catch(ignore){}toast('未发放积分：'+e.message);}finally{refundBusy=false;}}
 const XT=window.WATER_EXAM,types=XT.types;
 let state=E.fresh(),storageOK=true,loadWarning=false,screen='map',filter={ch:'all',type:'all',scope:'all',search:''},page=1,choice=null,toastTimer;
 let reviewChapter=1;

@@ -6,7 +6,7 @@ function create({storage,engine,questions,key}){
  const C=root.SWEET_COACH,markerKey=key+'-refund-once-v1';
  function readMarker(){const raw=storage.getItem(markerKey);return raw?C.validateRefund(JSON.parse(raw)):null;}
  function saved(){const raw=storage.getItem(key);return raw?engine.validateState(JSON.parse(raw),questions):null;}
- function retain(state){const receipt=readMarker()||C.validateRefund(saved()?.sweet.refund)||C.validateRefund(state.sweet.refund);if(receipt){storage.setItem(markerKey,JSON.stringify(receipt));state.sweet.refund=receipt;}return state;}
+ function retain(state){const receipt=readMarker()||C.validateRefund(saved()?.sweet.refund)||C.validateRefund(state.sweet.refund);if(receipt){storage.setItem(markerKey,JSON.stringify(receipt));state.sweet.refund=receipt;C.cancelRefundedRewards(state.sweet);}return state;}
  function claim(current,now=Date.now()){
   const next=retain(saved()||engine.validateState(JSON.parse(JSON.stringify(current)),questions));
   const receipt=C.refundOnce(next.sweet,now);
