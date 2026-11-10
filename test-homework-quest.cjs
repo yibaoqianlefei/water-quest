@@ -1,0 +1,23 @@
+const assert=require('node:assert/strict');
+const D=require('./docs/homework-data.js'),HQ=require('./docs/homework-quest.js'),H=require('./docs/homework.js');
+require('./docs/coach.js');const E=require('./docs/engine.js'),bank=require('./docs/bank.js'),clone=x=>JSON.parse(JSON.stringify(x));
+const state=E.fresh(),s=state.homework.quest;state.sweet.hearts=100;state.completed['1']={score:83,passed:true,stars:1,date:'2026-11-10'};
+assert.deepEqual([1,2,3,4,5,6,7].map(ch=>HQ.items(ch).length),[4,4,4,5,3,3,3]);assert.equal(new Set([1,2,3,4,5,6,7].flatMap(ch=>HQ.items(ch).map(q=>q.id))).size,26);
+assert.throws(()=>HQ.start(s,2));for(const ch of [0,8,'1',1.5])assert.throws(()=>HQ.start(s,ch));
+HQ.start(s,1);assert.throws(()=>HQ.submit(s));assert.throws(()=>HQ.grade(s,state.homework));assert.throws(()=>HQ.next(s));s.session.draft.text='金属管、塑料管、复合管';
+assert.deepEqual(E.validateState(clone(state),bank.questions).homework.quest,s);
+HQ.submit(s);s.session.draft.points[0]=true;assert.deepEqual(HQ.validate(clone(s)),s);
+const bad=clone(s);bad.session.draft.points=[];assert.throws(()=>HQ.validate(bad));
+const skip=clone(s);skip.session.cursor=1;assert.throws(()=>HQ.validate(skip));
+function finish(ch,hits){HQ.start(s,ch);const list=HQ.items(ch);for(let i=0;i<list.length;i++){s.session.draft.text='独立作答 '+list[i].number;HQ.submit(s);s.session.draft.points=list[i].points.map(()=>i<hits);const correct=HQ.grade(s,state.homework);assert.equal(correct,i<hits);assert.throws(()=>HQ.grade(s,state.homework));assert.equal(state.homework.answers[list[i].id].status,correct?'mastered':'review');HQ.next(s);assert.deepEqual(HQ.validate(clone(s)),s);}}
+finish(1,3);assert.equal(s.completed[1].score,75);assert.equal(HQ.unlocked(s,2),false);finish(1,4);assert.equal(HQ.unlocked(s,2),true);
+for(let ch=2;ch<=7;ch++)finish(ch,Math.ceil(HQ.items(ch).length*.8));
+assert.equal(s.completed[4].score,80);assert.ok(Object.values(s.completed).every(r=>r.passed));assert.equal(Object.keys(state.homework.answers).length,26);
+assert.equal(state.sweet.hearts,100);assert.equal(state.completed['1'].score,83);assert.equal(state.session,null);assert.deepEqual(state.stats,{});
+finish(1,0);assert.equal(s.completed[1].score,100,'highest stage score preserved');assert.equal(s.session.done,true);assert.equal(HQ.result(s.session).passed,false);
+assert.deepEqual(E.validateState(clone(state),bank.questions),state);
+const old={version:1,answers:{hw01:{text:'已有草稿',choice:null,revealed:false,status:'new'}}};const migrated=H.validate(old);assert.equal(migrated.answers.hw01.text,'已有草稿');assert.deepEqual(migrated.quest,HQ.fresh());
+const forged=clone(s);forged.completed[1].score=99;assert.throws(()=>HQ.validate(forged));
+const helpers={title:(a,b,c)=>'<h1>'+b+'</h1><p>'+c+'</p>',chapters:bank.chapters};HQ.route('#homework-quest');assert.ok(HQ.view(state,helpers).includes('26 道复习题'));HQ.route('#homework-quest/play');assert.ok(HQ.view(state,helpers).includes('本关逐题回顾'));
+HQ.start(s,1);s.session.draft.text='<img src=x onerror=alert(1)>';const html=HQ.view(state,helpers);assert.ok(html.includes('&lt;img src=x'));assert.ok(!html.includes('<img src=x'));
+console.log('PASS: all 26 assigned questions, seven full chapters, grading gate, 80% threshold, best scores, draft restore, old progress migration and main quest/rewards isolation.');
