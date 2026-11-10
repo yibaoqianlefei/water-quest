@@ -1,0 +1,26 @@
+const assert=require('node:assert/strict'),C=require('./docs/coach.js'),D=require('./docs/bank.js'),E=require('./docs/engine.js');
+const now=Date.parse('2026-11-10T08:00:00+08:00'),copy=x=>JSON.parse(JSON.stringify(x));
+const legacy=C.fresh(now);legacy.hearts=500;
+legacy.rewards=Array.from({length:14},(_,i)=>({id:['praise','rest','wish'][i%3],at:now}));
+const s=C.validate(copy(legacy),D.questions,now);
+assert.equal(s.rewards.length,14);assert.equal(new Set(s.rewards.map(r=>r.uid)).size,14);
+assert.ok(s.rewards.every(r=>r.usedAt===null));assert.deepEqual(C.validate(copy(s),D.questions,now),s);
+assert.equal(C.rewards.length,12);
+for(const r of C.rewards){assert.ok(r.message&&r.category&&r.time&&r.budget);assert.ok(r.cost>0);}
+const before=s.hearts;
+for(let i=0;i<12;i++)C.redeem(s,'hug',now);
+assert.equal(s.rewards.length,26,'new rewards must not evict the old rewards');
+assert.equal(s.hearts,before-72);assert.equal(new Set(s.rewards.map(r=>r.uid)).size,26);
+const uid=s.rewards[0].uid,other=s.rewards[1].uid,balance=s.hearts;
+C.setRewardUsed(s,uid,true,now+10);assert.equal(s.rewards[0].usedAt,now+10);assert.equal(s.rewards[1].usedAt,null);
+C.setRewardUsed(s,uid,true,now+20);assert.equal(s.rewards[0].usedAt,now+10,'repeat use is idempotent');
+C.setRewardUsed(s,uid,false,now+30);assert.equal(s.rewards[0].usedAt,null);assert.equal(s.hearts,balance);
+C.setRewardUsed(s,other,true,now+30);
+assert.deepEqual(C.validate(copy(s),D.questions,now),s);
+const state=E.fresh();state.sweet=s;assert.deepEqual(E.validateState(copy(state),D.questions).sweet.rewards,s.rewards);
+const zero=C.fresh(now);assert.throws(()=>C.redeem(zero,'tea',now));assert.equal(zero.hearts,0);assert.equal(zero.rewards.length,0);
+assert.throws(()=>C.redeem(s,'invalid',now));assert.throws(()=>C.setRewardUsed(s,'invalid',true));
+const bad=copy(s);bad.rewards[1].uid=bad.rewards[0].uid;assert.throws(()=>C.validate(bad,D.questions,now));
+const badDate=copy(s);badDate.rewards[0].usedAt=now-1;assert.throws(()=>C.validate(badDate,D.questions,now));
+const long=C.fresh(now);long.hearts=100000;for(let i=0;i<51;i++)C.redeem(long,'praise',now+i);assert.equal(C.validate(copy(long),D.questions,now).rewards.length,51);
+console.log('PASS: 12 rewards, legacy card migration, unique duplicates, no 20-card truncation, use/undo without charges, backup recovery and invalid record rejection.');
